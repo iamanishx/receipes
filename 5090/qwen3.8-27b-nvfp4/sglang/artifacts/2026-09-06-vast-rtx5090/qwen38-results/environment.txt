@@ -1,0 +1,54 @@
+captured_utc=2026-09-06T16:54:55Z
+image=lmsysorg/sglang:dev-qwen38-27b-dflash2
+model=RadixArk/Qwen3.8-27B-NVFP4
+model_revision=319f741cce68d7914884900c138a1fbb70a42f30
+draft=incoai/Qwen3.8-27B-DFlash2
+draft_revision=dedf8df68adfb1afeaf7b7480c0a0243108177b4
+
+Sun Sep  6 16:54:55 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.95.05              Driver Version: 580.95.05      CUDA Version: 13.0     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA GeForce RTX 5090        On  |   00000000:24:00.0 Off |                  N/A |
+|  0%   36C    P8             27W /  575W |   31897MiB /  32607MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|    0   N/A  N/A            8143      C   /opt/sglang/bin/python3                 604MiB |
+|    0   N/A  N/A            8298      C   sglang::scheduler                     31278MiB |
++-----------------------------------------------------------------------------------------+
+
+Linux 2db99d033f84 5.15.0-181-generic #191-Ubuntu SMP Fri May 22 19:09:02 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+
+               total        used        free      shared  buff/cache   available
+Mem:           503Gi        97Gi       258Gi       2.8Gi       154Gi       406Gi
+Swap:          8.0Gi       119Mi       7.9Gi
+
+Filesystem      Size  Used Avail Use% Mounted on
+overlay          60G   27G   34G  44% /
+
+sglang_commit=5f55db35e926d50676f75b812640ea2410b0fe0e
+sglang_commit_date=2026-08-22 02:06:24 +0000
+sglang_subject=[Quant] Load compressed-tensors kv_cache_scheme scales (#35455)
+?? onstart.sh
+
+sglang=0.0.0.dev1+g5f55db35e
+torch=2.13.0+cu130
+flashinfer-python=0.6.17
+flashinfer-jit-cache=0.6.17+cu130
+flashinfer-cubin=0.6.17
+sglang-kernel=0.4.6.post1
+transformers=5.12.1
+huggingface-hub=1.28.0
+nvidia-cudnn-cu13=9.20.0.48
+torch_cuda=13.0
+compute_capability=(12, 0)

@@ -1,0 +1,7 @@
+[90mHint: A new version of huggingface_hub (1.30.0) is available! You are using version 1.28.0.
+To update, run: hf update[0m
+[90mHint: The `hf-cli` skill is not installed. Run `hf skills add -g --claude` to teach your AI agents how to use the `hf` CLI.[0m
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Fetching 22 files:   5%|▍         | 1/22 [00:00<00:04,  5.11it/s]Fetching 22 files:  41%|████      | 9/22 [00:00<00:00, 27.98it/s]Fetching 22 files:  55%|█████▍    | 12/22 [00:00<00:00, 26.39it/s]Fetching 22 files:  68%|██████▊   | 15/22 [00:00<00:00, 26.62it/s]Fetching 22 files:  82%|████████▏ | 18/22 [00:00<00:00, 20.13it/s]Fetching 22 files:  86%|████████▋ | 19/22 [00:20<00:00, 20.13it/s]Fetching 22 files:  91%|█████████ | 20/22 [02:09<00:29, 14.87s/it]Fetching 22 files:  95%|█████████▌| 21/22 [03:04<00:20, 20.47s/it]Fetching 22 files: 100%|██████████| 22/22 [03:12<00:00, 18.35s/it]Fetching 22 files: 100%|██████████| 22/22 [03:12<00:00,  8.73s/it]
+[32m✓ Downloaded[0m
+  path: /root/.cache/huggingface/hub/models--RadixArk--Qwen3.8-27B-NVFP4/snapshots/319f741cce68d7914884900c138a1fbb70a42f30

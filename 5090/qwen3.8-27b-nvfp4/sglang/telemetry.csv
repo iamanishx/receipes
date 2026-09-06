@@ -1,0 +1,9 @@
+test,samples,active_samples,mean_active_gpu_util_pct,max_gpu_util_pct,mean_active_power_w,max_power_w,max_vram_mib,max_temp_c
+baseline-flashinfer-auto-fp32,904,699,99.2,100.0,404.5,527.0,31815,74
+dflash2-flashinfer-auto-bf16,473,292,93.0,97.0,389.2,517.7,32017,69
+max-context-ar-bf16-260k,711,619,98.3,100.0,426.6,504.2,31897,72
+mtp-flashinfer-auto-bf16,539,363,95.1,99.0,389.0,528.0,28165,72
+mtp5-flashinfer-auto-bf16,524,348,93.8,99.0,402.2,524.4,28241,71
+mtp5-long-output-32k,724,635,94.5,95.0,400.4,412.3,27997,68
+mtp5-max-output-41300,899,811,94.5,95.0,403.7,414.0,27999,69
+mtp5-throughput-c8,778,432,91.9,96.0,405.3,504.9,28547,68

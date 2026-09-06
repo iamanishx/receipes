@@ -1,0 +1,5 @@
+requested_concurrency,measured_concurrency,output_tok_s,request_s,mean_ttft_ms,p95_ttft_ms,mean_tpot_ms,accept_length
+1,1.0,164.1,0.64,107.19,112.54,5.69,3.68
+2,1.95,298.53,1.17,162.18,240.44,5.92,3.74
+4,3.8,490.37,1.92,261.03,1094.46,6.77,3.81
+8,7.25,646.05,2.52,928.46,2551.26,7.63,3.62

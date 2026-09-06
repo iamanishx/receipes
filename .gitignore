@@ -1,0 +1,41 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Model weights and caches
+.cache/
+.hf_home/
+hf-cache/
+models/
+*.safetensors
+*.gguf
+*.pt
+*.pth
+
+# Runtime files and archives
+*.pid
+*.sock
+nohup.out
+*.tar
+*.tar.gz
+*.tgz
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
+
+# Scratch output
+_scratch/

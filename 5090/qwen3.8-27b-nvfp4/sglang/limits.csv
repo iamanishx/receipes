@@ -1,0 +1,5 @@
+test,input_tokens,output_tokens,retokenized_output_tokens,duration_s,output_tok_s,ttft_ms,tpot_ms,accept_length
+DFlash2 48K prompt,48000,512,506,11.42,44.84,7907.89,6.82,3.39
+MTP-5 32K output,1024,32768,13480,158.83,206.32,120.93,4.84,4.39
+MTP-5 41.3K output,1024,41300,13568,202.71,203.74,128.22,4.9,4.38
+AR 260K prompt,260000,1024,1024,156.04,6.56,136919.79,18.66,0

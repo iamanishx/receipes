@@ -1,0 +1,9 @@
+config,workload,input_tokens,output_tokens,output_tok_s,mean_ttft_ms,mean_tpot_ms,p95_tpot_ms,accept_length
+AR,micro,1024,256,72.7,101.64,13.4,13.43,0
+AR,official,8192,1024,69.65,765.99,13.62,13.68,0
+MTP-4,micro,1024,256,147.46,108.67,6.37,7.57,3.14
+MTP-4,official,8192,1024,131.99,782.34,6.81,8.01,2.98
+MTP-5,micro,1024,256,161.25,110.28,5.78,7.75,3.55
+MTP-5,official,8192,1024,137.05,785.34,6.53,7.82,3.19
+DFlash2,micro,1024,256,188.55,107.31,4.89,7.38,4.35
+DFlash2,official,8192,1024,163.11,839.64,5.31,7.16,3.97

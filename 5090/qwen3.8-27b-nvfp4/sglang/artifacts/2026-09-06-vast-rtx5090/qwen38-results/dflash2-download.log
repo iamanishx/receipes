@@ -1,0 +1,4 @@
+Fetching 5 files:   0%|          | 0/5 [00:00<?, ?it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Fetching 5 files:  20%|██        | 1/5 [00:00<00:00,  6.31it/s]Fetching 5 files:  80%|████████  | 4/5 [00:01<00:00,  3.58it/s]Fetching 5 files: 100%|██████████| 5/5 [00:32<00:00,  9.00s/it]Fetching 5 files: 100%|██████████| 5/5 [00:32<00:00,  6.53s/it]
+[32m✓ Downloaded[0m
+  path: /root/.cache/huggingface/hub/models--incoai--Qwen3.8-27B-DFlash2/snapshots/dedf8df68adfb1afeaf7b7480c0a0243108177b4

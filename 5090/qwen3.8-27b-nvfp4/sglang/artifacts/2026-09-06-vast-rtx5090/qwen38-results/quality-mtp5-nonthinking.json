@@ -1,0 +1,212 @@
+[
+  {
+    "name": "python_intervals",
+    "prompt": "Return only executable Python code, without Markdown. Implement merge_intervals(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]. Requirements: do not mutate the input; normalize reversed endpoints; merge overlapping intervals and intervals that touch at an endpoint; O(n log n). Include concise type annotations and no external packages.",
+    "elapsed_seconds": 1.0021708901040256,
+    "response": {
+      "id": "e47971aeeefe42199014fd594072d4be",
+      "object": "chat.completion",
+      "created": 1788711912,
+      "model": "/root/.cache/huggingface/hub/models--RadixArk--Qwen3.8-27B-NVFP4/snapshots/319f741cce68d7914884900c138a1fbb70a42f30",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "```python\nfrom typing import List, Tuple\n\ndef merge_intervals(intervals: List[Tuple[int, int]]) -> List[Tuple[int, int]]:\n    if not intervals:\n        return []\n    \n    normalized: List[Tuple[int, int]] = []\n    for start, end in intervals:\n        if start <= end:\n            normalized.append((start, end))\n        else:\n            normalized.append((end, start))\n    \n    normalized.sort(key=lambda x: x[0])\n    \n    merged: List[Tuple[int, int]] = []\n    for start, end in normalized:\n        if not merged or start > merged[-1][1]:\n            merged.append((start, end))\n        else:\n            merged[-1] = (merged[-1][0], max(merged[-1][1], end))\n    \n    return merged\n```",
+            "reasoning_content": null,
+            "tool_calls": null
+          },
+          "logprobs": null,
+          "finish_reason": "stop",
+          "matched_stop": 248046
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 79,
+        "total_tokens": 268,
+        "completion_tokens": 189,
+        "prompt_tokens_details": null,
+        "reasoning_tokens": 0
+      },
+      "metadata": {
+        "weight_version": "default"
+      }
+    }
+  },
+  {
+    "name": "python_async",
+    "prompt": "Return only executable Python code, without Markdown. Implement async def async_map_limited(items, limit, fn). It must preserve input order, never run more than limit calls to async fn concurrently, reject limit < 1, support an empty iterable, and if any call fails cancel and await all unfinished calls before re-raising the original exception. Use only the Python standard library.",
+    "elapsed_seconds": 1.1675017368979752,
+    "response": {
+      "id": "a4dbadf7cf544a64a5aaca66117dc54c",
+      "object": "chat.completion",
+      "created": 1788711913,
+      "model": "/root/.cache/huggingface/hub/models--RadixArk--Qwen3.8-27B-NVFP4/snapshots/319f741cce68d7914884900c138a1fbb70a42f30",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "```python\nimport asyncio\n\n\nasync def async_map_limited(items, limit, fn):\n    if limit < 1:\n        raise ValueError(\"limit must be at least 1\")\n\n    items = list(items)\n    if not items:\n        return []\n\n    results = [None] * len(items)\n    semaphore = asyncio.Semaphore(limit)\n    tasks = []\n    original_exception = None\n\n    async def run(index, item):\n        nonlocal original_exception\n        async with semaphore:\n            try:\n                results[index] = await fn(item)\n            except Exception as exc:\n                if original_exception is None:\n                    original_exception = exc\n                raise\n\n    for i, item in enumerate(items):\n        tasks.append(asyncio.create_task(run(i, item)))\n\n    try:\n        await asyncio.gather(*tasks)\n    except Exception:\n        for task in tasks:\n            if not task.done():\n                task.cancel()\n        await asyncio.gather(*tasks, return_exceptions=True)\n        raise original_exception\n\n    return results\n```",
+            "reasoning_content": null,
+            "tool_calls": null
+          },
+          "logprobs": null,
+          "finish_reason": "stop",
+          "matched_stop": 248046
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 88,
+        "total_tokens": 320,
+        "completion_tokens": 232,
+        "prompt_tokens_details": null,
+        "reasoning_tokens": 0
+      },
+      "metadata": {
+        "weight_version": "default"
+      }
+    }
+  },
+  {
+    "name": "typescript_retry",
+    "prompt": "Return only TypeScript code, without Markdown and without using any. Implement generic retry<T>(operation: (signal: AbortSignal) => Promise<T>, options: { attempts: number; baseDelayMs: number; signal?: AbortSignal; shouldRetry?: (error: unknown) => boolean }): Promise<T>. Use exponential backoff. attempts includes the first call. Honor abort both while operation is running and while sleeping, never retry AbortError, remove event listeners, and preserve the final error.",
+    "elapsed_seconds": 3.0876385923475027,
+    "response": {
+      "id": "5de73231e1964abebf0af488024cdb5a",
+      "object": "chat.completion",
+      "created": 1788711916,
+      "model": "/root/.cache/huggingface/hub/models--RadixArk--Qwen3.8-27B-NVFP4/snapshots/319f741cce68d7914884900c138a1fbb70a42f30",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "```typescript\nfunction isAbortError(error: unknown): boolean {\n  if (error instanceof Error) {\n    if (error.name === \"AbortError\") return true;\n    if (error.name === \"DOMException\" && (error as DOMException).code === 20) return true;\n  }\n  return false;\n}\n\nfunction sleep(ms: number, signal?: AbortSignal): Promise<void> {\n  return new Promise<void>((resolve, reject) => {\n    if (signal?.aborted) {\n      reject(signal.reason ?? new DOMException(\"Aborted\", \"AbortError\"));\n      return;\n    }\n\n    let timer: ReturnType<typeof setTimeout> | undefined;\n    let settled = false;\n\n    const onAbort = () => {\n      if (settled) return;\n      settled = true;\n      if (timer !== undefined) clearTimeout(timer);\n      signal?.removeEventListener(\"abort\", onAbort);\n      reject(signal?.reason ?? new DOMException(\"Aborted\", \"AbortError\"));\n    };\n\n    timer = setTimeout(() => {\n      if (settled) return;\n      settled = true;\n      signal?.removeEventListener(\"abort\", onAbort);\n      resolve();\n    }, ms);\n\n    signal?.addEventListener(\"abort\", onAbort, { once: true });\n  });\n}\n\nexport async function retry<T>(\n  operation: (signal: AbortSignal) => Promise<T>,\n  options: {\n    attempts: number;\n    baseDelayMs: number;\n    signal?: AbortSignal;\n    shouldRetry?: (error: unknown) => boolean;\n  }\n): Promise<T> {\n  const { attempts, baseDelayMs, signal, shouldRetry } = options;\n\n  if (attempts < 1) {\n    throw new RangeError(\"attempts must be at least 1\");\n  }\n\n  let lastError: unknown;\n\n  for (let attempt = 1; attempt <= attempts; attempt++) {\n    if (signal?.aborted) {\n      throw signal.reason ?? new DOMException(\"Aborted\", \"AbortError\");\n    }\n\n    try {\n      return await operation(signal ?? new AbortController().signal);\n    } catch (error) {\n      lastError = error;\n\n      if (isAbortError(error)) {\n        throw error;\n      }\n\n      if (shouldRetry && !shouldRetry(error)) {\n        throw error;\n      }\n\n      if (attempt === attempts) {\n        break;\n      }\n\n      const delay = baseDelayMs * Math.pow(2, attempt - 1);\n\n      try {\n        await sleep(delay, signal);\n      } catch (sleepError) {\n        if (isAbortError(sleepError)) {\n          throw sleepError;\n        }\n        throw sleepError;\n      }\n    }\n  }\n\n  throw lastError;\n}\n```",
+            "reasoning_content": null,
+            "tool_calls": null
+          },
+          "logprobs": null,
+          "finish_reason": "stop",
+          "matched_stop": 248046
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 110,
+        "total_tokens": 744,
+        "completion_tokens": 634,
+        "prompt_tokens_details": null,
+        "reasoning_tokens": 0
+      },
+      "metadata": {
+        "weight_version": "default"
+      }
+    }
+  },
+  {
+    "name": "typescript_pagination",
+    "prompt": "Return only TypeScript code, without Markdown and without using any. Implement parsePagination(query: Record<string, string | string[] | undefined>) returning a discriminated union {ok:true,value:{page:number,pageSize:number,offset:number}} | {ok:false,error:string}. page defaults to 1, pageSize to 20, maximum pageSize is 100. Reject arrays, floats, exponents, whitespace, signs, zero, negatives, unsafe integers, and unknown keys.",
+    "elapsed_seconds": 3.860646487213671,
+    "response": {
+      "id": "cd6d645db9024674aa953047da915b89",
+      "object": "chat.completion",
+      "created": 1788711920,
+      "model": "/root/.cache/huggingface/hub/models--RadixArk--Qwen3.8-27B-NVFP4/snapshots/319f741cce68d7914884900c138a1fbb70a42f30",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "```typescript\nexport type ParsePaginationResult =\n  | { ok: true; value: { page: number; pageSize: number; offset: number } }\n  | { ok: false; error: string };\n\nconst ALLOWED_KEYS = new Set(['page', 'pageSize']);\n\nfunction isSafeIntegerString(s: string): boolean {\n  if (typeof s !== 'string') return false;\n  if (s.length === 0) return false;\n  // Reject leading/trailing whitespace\n  if (s !== s.trim()) return false;\n  // Reject signs (+, -)\n  if (s[0] === '+' || s[0] === '-') return false;\n  // Reject exponents\n  if (s.includes('e') || s.includes('E')) return false;\n  // Reject floats (decimal point)\n  if (s.includes('.')) return false;\n  // Must be all digits\n  if (!/^\\d+$/.test(s)) return false;\n  // Reject leading zeros (e.g., \"01\") unless the string is exactly \"0\"\n  if (s.length > 1 && s[0] === '0') return false;\n  // Parse and check for unsafe integers (must be within safe integer range)\n  const num = Number(s);\n  if (!Number.isSafeInteger(num)) return false;\n  return true;\n}\n\nexport function parsePagination(\n  query: Record<string, string | string[] | undefined>\n): ParsePaginationResult {\n  // Reject unknown keys\n  for (const key of Object.keys(query)) {\n    if (!ALLOWED_KEYS.has(key)) {\n      return { ok: false, error: `Unknown key: ${key}` };\n    }\n  }\n\n  // Reject arrays\n  for (const key of Object.keys(query)) {\n    const val = query[key];\n    if (Array.isArray(val)) {\n      return { ok: false, error: `Key \"${key}\" must not be an array` };\n    }\n  }\n\n  // Process page\n  let page: number;\n  const pageRaw = query['page'];\n  if (pageRaw === undefined) {\n    page = 1;\n  } else {\n    if (typeof pageRaw !== 'string') {\n      return { ok: false, error: 'page must be a string' };\n    }\n    if (!isSafeIntegerString(pageRaw)) {\n      return { ok: false, error: 'page must be a safe positive integer string' };\n    }\n    page = Number(pageRaw);\n    if (page < 1) {\n      return { ok: false, error: 'page must be at least 1' };\n    }\n  }\n\n  // Process pageSize\n  let pageSize: number;\n  const pageSizeRaw = query['pageSize'];\n  if (pageSizeRaw === undefined) {\n    pageSize = 20;\n  } else {\n    if (typeof pageSizeRaw !== 'string') {\n      return { ok: false, error: 'pageSize must be a string' };\n    }\n    if (!isSafeIntegerString(pageSizeRaw)) {\n      return { ok: false, error: 'pageSize must be a safe positive integer string' };\n    }\n    pageSize = Number(pageSizeRaw);\n    if (pageSize < 1) {\n      return { ok: false, error: 'pageSize must be at least 1' };\n    }\n    if (pageSize > 100) {\n      return { ok: false, error: 'pageSize must not exceed 100' };\n    }\n  }\n\n  const offset = (page - 1) * pageSize;\n\n  return {\n    ok: true,\n    value: { page, pageSize, offset },\n  };\n}\n```",
+            "reasoning_content": null,
+            "tool_calls": null
+          },
+          "logprobs": null,
+          "finish_reason": "stop",
+          "matched_stop": 248046
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 108,
+        "total_tokens": 945,
+        "completion_tokens": 837,
+        "prompt_tokens_details": null,
+        "reasoning_tokens": 0
+      },
+      "metadata": {
+        "weight_version": "default"
+      }
+    }
+  },
+  {
+    "name": "backend_idempotency",
+    "prompt": "Design POST /payments for at-least-once clients using PostgreSQL. Two identical requests may arrive concurrently, the process may crash after charging the external provider, and clients must receive the original response on retry. Give concrete SQL schema, transaction/state transitions, request-hash conflict behavior, provider idempotency-key usage, recovery worker behavior, and HTTP status semantics. Be concise but technically precise.",
+    "elapsed_seconds": 11.827987063210458,
+    "response": {
+      "id": "bacb4cf8bf174d1497121d7567052823",
+      "object": "chat.completion",
+      "created": 1788711932,
+      "model": "/root/.cache/huggingface/hub/models--RadixArk--Qwen3.8-27B-NVFP4/snapshots/319f741cce68d7914884900c138a1fbb70a42f30",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "# Design: `POST /payments` for At-Least-Once Clients\n\n## 1. Core Principles\n- **Idempotency Key**: Client-provided `Idempotency-Key` header (UUID).\n- **Request Hash**: SHA-256 of canonicalized request body (amount, currency, card details, etc.) to detect *conflicting* retries.\n- **State Machine**: `PENDING` \u2192 `PROCESSING` \u2192 `SUCCEEDED` / `FAILED`.\n- **Crash Safety**: All state transitions are in PostgreSQL transactions. External provider calls happen *outside* the DB transaction but are tracked via `provider_idempotency_key`.\n\n---\n\n## 2. SQL Schema\n\n```sql\nCREATE TABLE payments (\n    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n    idempotency_key     UUID NOT NULL UNIQUE,\n    request_hash        CHAR(64) NOT NULL,  -- SHA-256 hex of canonical request\n    status              VARCHAR(20) NOT NULL DEFAULT 'PENDING',\n    -- PENDING, PROCESSING, SUCCEEDED, FAILED\n    amount              NUMERIC(12,2) NOT NULL,\n    currency            CHAR(3) NOT NULL,\n    provider_ref        VARCHAR(255),       -- Provider's transaction ID\n    provider_idempotency_key VARCHAR(255),  -- Key sent to provider\n    error_code          VARCHAR(50),\n    error_message       TEXT,\n    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),\n    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),\n    completed_at        TIMESTAMPTZ,\n\n    CONSTRAINT chk_status CHECK (status IN ('PENDING','PROCESSING','SUCCEEDED','FAILED'))\n);\n\nCREATE INDEX idx_payments_status ON payments(status) WHERE status IN ('PENDING','PROCESSING');\nCREATE INDEX idx_payments_idempotency ON payments(idempotency_key);\n```\n\n> **Note**: `request_hash` is stored to detect if a retry with the same `Idempotency-Key` but *different* payload arrives.\n\n---\n\n## 3. Request-Hash Conflict Behavior\n\n| Scenario | Action |\n|---|---|\n| Same `Idempotency-Key`, same `request_hash` | Return cached response (original status/body). |\n| Same `Idempotency-Key`, **different** `request_hash` | Return `409 Conflict`. Do **not** process. |\n| New `Idempotency-Key` | Create new payment record. |\n\n---\n\n## 4. Transaction & State Transitions\n\n### Step 1: Acquire Idempotency Lock (Atomic)\n```sql\nBEGIN;\nINSERT INTO payments (idempotency_key, request_hash, status, amount, currency)\nVALUES ($1, $2, 'PENDING', $3, $4)\nON CONFLICT (idempotency_key) DO NOTHING\nRETURNING id, status, request_hash;\nCOMMIT;\n```\n\n- **If row returned**:\n  - If `status = 'SUCCEEDED'` or `'FAILED'`: Return cached response immediately.\n  - If `status = 'PENDING'` or `'PROCESSING'`: Check `request_hash`.\n    - Match \u2192 proceed to Step 2 (or wait for completion).\n    - Mismatch \u2192 `409 Conflict`.\n- **If no row returned** (conflict): Re-read the existing row.\n  - If `request_hash` matches \u2192 proceed to Step 2.\n  - If `request_hash` differs \u2192 `409 Conflict`.\n\n### Step 2: Transition to PROCESSING\n```sql\nBEGIN;\nUPDATE payments\nSET status = 'PROCESSING',\n    provider_idempotency_key = $1,  -- Generated UUID for provider\n    updated_at = now()\nWHERE id = $2 AND status = 'PENDING'\nRETURNING id;\nCOMMIT;\n```\n\n- If `UPDATE` affects 0 rows: Another worker already claimed it. Re-read status.\n  - If `SUCCEEDED`/`FAILED`: Return cached response.\n  - If `PROCESSING`: Wait/poll or return `202 Accepted` with `Location` header.\n\n### Step 3: Call External Provider\n- Use `provider_idempotency_key` as the provider\u2019s idempotency key.\n- **Do NOT** hold a DB transaction open during the external call.\n\n### Step 4: Record Result\n```sql\nBEGIN;\nUPDATE payments\nSET status = $1,          -- 'SUCCEEDED' or 'FAILED'\n    provider_ref = $2,\n    error_code = $3,\n    error_message = $4,\n    completed_at = now(),\n    updated_at = now()\nWHERE id = $5 AND status = 'PROCESSING'\nRETURNING id, status, provider_ref, error_code, error_message;\nCOMMIT;\n```\n\n- If `UPDATE` affects 0 rows: Another worker completed it. Re-read and return cached response.\n\n---\n\n## 5. Provider Idempotency-Key Usage\n\n- Generate a **new UUID** for `provider_idempotency_key` when transitioning to `PROCESSING`.\n- Send this key to the external provider in the API call.\n- If the provider call fails due to network timeout, **do not** assume failure. The provider may have processed it.\n- On retry (by recovery worker or client), **reuse the same** `provider_idempotency_key` to ensure the provider does not double-charge.\n\n---\n\n## 6. Recovery Worker Behavior\n\nA background job (e.g., cron every 30s) handles stuck payments:\n\n```sql\nSELECT id, provider_idempotency_key, amount, currency\nFROM payments\nWHERE status = 'PROCESSING'\n  AND updated_at < now() - interval '5 minutes'\nFOR UPDATE SKIP LOCKED;\n```\n\nFor each row:\n1. **Query the provider** using `provider_idempotency_key` to check the actual status.\n2. **If provider says SUCCEEDED**:\n   ```sql\n   UPDATE payments SET status='SUCCEEDED', provider_ref=$1, completed_at=now(), updated_at=now()\n   WHERE id=$2 AND status='PROCESSING';\n   ```\n3. **If provider says FAILED**:\n   ```sql\n   UPDATE payments SET status='FAILED', error_code='PROVIDER_FAILED', completed_at=now(), updated_at=now()\n   WHERE id=$2 AND status='PROCESSING';\n   ```\n4. **If provider says PENDING/UNKNOWN**:\n   - Leave as `PROCESSING`. Retry on next cycle.\n   - After N retries (e.g., 24h), mark as `FAILED` with `error_code='TIMEOUT'`.\n\n> **Critical**: The recovery worker **never** re-sends the charge. It only queries the provider\u2019s status using the existing `provider_idempotency_key`.\n\n---\n\n## 7. HTTP Status Semantics\n\n| Status | Meaning |\n|---|---|\n| `201 Created` | New payment successfully created and processed. Body includes `payment_id`, `status`, `provider_ref`. |\n| `200 OK` | Idempotent retry: payment already exists and is in terminal state (`SUCCEEDED`/`FAILED`). Body is identical to the original response. |\n| `202 Accepted` | Idempotent retry: payment is in `PROCESSING` state. Body includes `payment_id` and `status: \"PROCESSING\"`. Client should poll or wait. |\n| `409 Conflict` | Same `Idempotency-Key` but different `request_hash`. |\n| `400 Bad Request` | Invalid payload. |\n| `500 Internal Server Error` | Unexpected internal error. Client should retry with the same `Idempotency-Key`. |\n\n### Response Body (Terminal States)\n```json\n{\n  \"payment_id\": \"uuid\",\n  \"status\": \"SUCCEEDED\",\n  \"provider_ref\": \"prov_tx_123\",\n  \"amount\": \"100.00\",\n  \"currency\": \"USD\",\n  \"created_at\": \"2024-01-01T00:00:00Z\",\n  \"completed_at\": \"2024-01-01T00:00:01Z\"\n}\n```\n\n### Response Body (Processing)\n```json\n{\n  \"payment_id\": \"uuid\",\n  \"status\": \"PROCESSING\",\n  \"amount\": \"100.00\",\n  \"currency\": \"USD\",\n  \"created_at\": \"2024-01-01T00:00:00Z\"\n}\n```\n\n---\n\n## 8. Key Guarantees\n\n1. **No double-charging**: Provider idempotency key ensures external provider processes the charge at most once.\n2. **No lost responses**: All terminal states are persisted in PostgreSQL. Retries return the original response.\n3. **Crash safety**: If the process crashes after charging the provider but before updating the DB, the recovery worker queries the provider using the `provider_idempotency_key` and updates the DB.\n4. **Concurrency safety**: `ON CONFLICT DO NOTHING` and `FOR UPDATE SKIP LOCK",
+            "reasoning_content": null,
+            "tool_calls": null
+          },
+          "logprobs": null,
+          "finish_reason": "length",
+          "matched_stop": null
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 90,
+        "total_tokens": 2138,
+        "completion_tokens": 2048,
+        "prompt_tokens_details": null,
+        "reasoning_tokens": 0
+      },
+      "metadata": {
+        "weight_version": "default"
+      }
+    }
+  },
+  {
+    "name": "backend_debug",
+    "prompt": "Review and replace this Express/TypeScript handler. Explain every correctness or scalability bug, then provide corrected TypeScript with bounded concurrency and one response only. Assume sendEmail returns a Promise and users can contain 100k rows.\n\napp.post(/notify, async (req, res) => {\n  const users = await db.user.findMany();\n  users.forEach(async user => {\n    await sendEmail(user.email, req.body.message);\n    res.json({ sent: true });\n  });\n});",
+    "elapsed_seconds": 10.338751835282892,
+    "response": {
+      "id": "1eb9760f691b49acbe78cc5cdc0e9f75",
+      "object": "chat.completion",
+      "created": 1788711942,
+      "model": "/root/.cache/huggingface/hub/models--RadixArk--Qwen3.8-27B-NVFP4/snapshots/319f741cce68d7914884900c138a1fbb70a42f30",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "# Code Review: Express/TypeScript Notification Handler\n\n## Bugs Identified\n\n### 1. **Unbounded Concurrency (Scalability Bug)**\n`users.forEach(async user => { ... })` fires **100,000 concurrent `sendEmail` promises** simultaneously. This will:\n- Exhaust file descriptors, memory, and network sockets\n- Overwhelm the email provider (rate limits, throttling, or outright rejection)\n- Potentially crash the Node.js process or cause OOM\n\n### 2. **Multiple `res.json()` Calls (Correctness Bug)**\n`res.json()` is called **once per user** inside the loop. After the first call, subsequent calls throw `ERR_HTTP_HEADERS_SENT` or are silently ignored. The client receives only the first response; the rest are errors or no-ops.\n\n### 3. **No Error Handling (Correctness Bug)**\nIf `sendEmail` rejects for any user, the unhandled promise rejection can crash the process (in older Node) or produce unhandled rejection warnings. There is no try/catch, no partial-failure reporting, and no way to know which emails failed.\n\n### 4. **No Input Validation (Correctness Bug)**\n`req.body.message` is not validated. It could be `undefined`, `null`, an object, or maliciously large. This is passed directly to `sendEmail` without sanitization.\n\n### 5. **No Request Timeout / Cancellation (Scalability Bug)**\nA client can disconnect mid-processing, but the server continues sending 100k emails. There is no mechanism to abort on client disconnect.\n\n### 6. **Blocking the Event Loop with Synchronous DB Query (Minor Scalability Concern)**\n`db.user.findMany()` loads **all 100k users into memory** at once. For very large tables, this can cause high memory pressure. A streaming or paginated approach would be better, but for this fix we'll assume the dataset fits in memory and focus on the concurrency/response bugs.\n\n### 7. **No Rate Limiting / Backpressure (Scalability Bug)**\nEven with bounded concurrency, there is no backpressure mechanism. If `sendEmail` is slow, the queue grows unboundedly in memory.\n\n---\n\n## Corrected Implementation\n\n```typescript\nimport { Request, Response } from \"express\";\nimport { db } from \"./db\"; // your Prisma/ORM instance\n\n// --- Configuration ---\nconst CONCURRENCY_LIMIT = 10; // max in-flight sendEmail calls\nconst BATCH_SIZE = 1000;      // fetch users in batches to limit memory\n\n/**\n * Bounded-concurrency pool: runs `fn` for each item in `items`,\n * with at most `limit` promises in flight at any time.\n * Collects results and errors.\n */\nasync function runWithConcurrency<T, R>(\n  items: T[],\n  limit: number,\n  fn: (item: T, index: number) => Promise<R>\n): Promise<{ results: R[]; errors: { index: number; error: unknown }[] }> {\n  const results: R[] = new Array(items.length);\n  const errors: { index: number; error: unknown }[] = [];\n  let nextIndex = 0;\n\n  async function worker(): Promise<void> {\n    while (nextIndex < items.length) {\n      const i = nextIndex++;\n      try {\n        results[i] = await fn(items[i], i);\n      } catch (err) {\n        errors.push({ index: i, error: err });\n      }\n    }\n  }\n\n  const workers: Promise<void>[] = [];\n  for (let i = 0; i < Math.min(limit, items.length); i++) {\n    workers.push(worker());\n  }\n  await Promise.all(workers);\n\n  return { results, errors };\n}\n\n/**\n * POST /notify\n * Sends a notification email to all users with bounded concurrency.\n * Returns a single JSON response summarizing success/failure.\n */\napp.post(\"/notify\", async (req: Request, res: Response) => {\n  // 1. Validate input\n  const message: unknown = req.body?.message;\n  if (typeof message !== \"string\" || message.trim().length === 0) {\n    res.status(400).json({ error: \"A non-empty string 'message' is required.\" });\n    return;\n  }\n\n  // 2. Track client disconnect to abort processing\n  let aborted = false;\n  req.on(\"close\", () => {\n    aborted = true;\n  });\n\n  try {\n    // 3. Fetch users in batches to avoid loading 100k rows at once\n    const allUsers: { email: string }[] = [];\n    let offset = 0;\n    while (true) {\n      if (aborted) break;\n      const batch = await db.user.findMany({\n        select: { email: true },\n        skip: offset,\n        take: BATCH_SIZE,\n      });\n      if (batch.length === 0) break;\n      allUsers.push(...batch);\n      offset += batch.length;\n      if (batch.length < BATCH_SIZE) break;\n    }\n\n    if (aborted) {\n      res.status(499).json({ error: \"Client disconnected.\" });\n      return;\n    }\n\n    if (allUsers.length === 0) {\n      res.json({ sent: 0, failed: 0, total: 0 });\n      return;\n    }\n\n    // 4. Send emails with bounded concurrency\n    const { errors } = await runWithConcurrency(\n      allUsers,\n      CONCURRENCY_LIMIT,\n      async (user) => {\n        if (aborted) {\n          throw new Error(\"Aborted: client disconnected\");\n        }\n        await sendEmail(user.email, message);\n      }\n    );\n\n    // 5. Single response\n    const sent = allUsers.length - errors.length;\n    res.json({\n      sent,\n      failed: errors.length,\n      total: allUsers.length,\n      // Optionally include first few errors for debugging\n      errors: errors.slice(0, 5).map((e) => ({\n        index: e.index,\n        message: String(e.error),\n      })),\n    });\n  } catch (err) {\n    // 6. Top-level error handling\n    console.error(\"Notify handler error:\", err);\n    res.status(500).json({ error: \"Internal server error\" });\n  }\n});\n```\n\n## Key Design Decisions\n\n| Concern | Solution |\n|---|---|\n| **Unbounded concurrency** | `runWithConcurrency` worker-pool pattern: exactly `CONCURRENCY_LIMIT` (10) in-flight promises at all times. |\n| **Multiple responses** | Exactly **one** `res.json()` call at the end of the handler. |\n| **Memory pressure** | Users fetched in batches of 1,000 via `skip`/`take`. |\n| **Error handling** | Per-item errors are collected, not thrown. Top-level `try/catch` catches DB or unexpected errors. |\n| **Client disconnect** | `req.on(\"close\")` sets `aborted`; the loop checks it before each batch and before each email send. |\n| **Input validation** | `message` must be a non-empty string; otherwise 400 is returned immediately. |\n| **Single response** | The response includes `sent`, `failed`, `total`, and a sample of errors \u2014 giving the client full visibility in one JSON payload. |\n\n> **Note:** For production systems with 100k+ users, consider moving this to a **background job queue** (e.g., BullMQ, AWS SQS) so the HTTP request returns immediately with a job ID, and the actual email sending happens asynchronously with its own retry/monitoring infrastructure. The bounded-concurrency approach above is appropriate for synchronous request/response semantics but is not ideal for very large fan-out operations.",
+            "reasoning_content": null,
+            "tool_calls": null
+          },
+          "logprobs": null,
+          "finish_reason": "stop",
+          "matched_stop": 248046
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 117,
+        "total_tokens": 1884,
+        "completion_tokens": 1767,
+        "prompt_tokens_details": null,
+        "reasoning_tokens": 0
+      },
+      "metadata": {
+        "weight_version": "default"
+      }
+    }
+  }
+]
