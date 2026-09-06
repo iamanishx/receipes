@@ -213,6 +213,14 @@ sglang serve \
   --host 127.0.0.1 --port 30000
 ```
 
+### Native MTP clarification
+
+The MTP runs did not download or reference an external EAGLE checkpoint. Qwen's native MTP weights are included in the same `RadixArk/Qwen3.8-27B-NVFP4` repository. Its weight index contains 15 `mtp.*` tensors, and the model configuration declares one MTP hidden layer with shared rather than dedicated embeddings.
+
+`--speculative-algorithm EAGLE` selects SGLang's execution and verification machinery for that native head. The recorded server arguments confirm `speculative_draft_model_path=None`. SGLang nevertheless instantiated a `Qwen3_5ForCausalLMMTP` draft runtime and reported an additional 5.53 GB GPU allocation. That number is runtime allocation attributed to the native draft module and its representation, not a second downloaded 27B model.
+
+DFlash2 was different: it explicitly used the separately downloaded `incoai/Qwen3.8-27B-DFlash2` draft checkpoint.
+
 ## Concurrent serving
 
 The throughput profile used MTP-5, BF16 GDN state, `extra_buffer_lazy`, `--mamba-full-memory-ratio 7.5`, and decode CUDA graphs up to batch size eight. The physical state pool capped active model requests at six; additional client requests queued.
