@@ -10,7 +10,7 @@ Qwen3.8-27B NVFP4 fits and runs well on one 32 GB RTX 5090. For single-stream sy
 
 MTP with a five-token verification window reached 161.25 output tokens/s on the short workload. A throughput-oriented MTP-5 configuration reached 646.05 aggregate output tokens/s with eight submitted clients, although SGLang capped active model requests at six and queued the remainder.
 
-The fastest configurations sacrifice context capacity. MTP-5 exposed 42,344 total token slots and DFlash2 exposed 54,153. A dedicated non-speculative profile exposed 276,664 physical slots, exceeding the model's native 262,144-token context limit. A 260K-input + 1K-output request completed successfully.
+The tested speculative configurations exposed less context capacity: MTP-5 exposed 42,344 total token slots and DFlash2 exposed 54,153. Subsequent source and upstream issue review showed that the MTP result was affected by a known SGLang KV-pool sizing bug, so 42,344 is not an inherent native-MTP limit. A dedicated non-speculative profile exposed 276,664 physical slots, exceeding the model's native 262,144-token context limit. A 260K-input + 1K-output request completed successfully.
 
 For local coding, non-thinking mode was responsive and produced two Python solutions that passed focused local tests. TypeScript and backend answers were generally useful but contained edge-case omissions. Thinking mode needs a substantially larger completion budget: with `max_tokens=2048`, five of six prompts exhausted the budget during reasoning and produced no final answer.
 
@@ -213,13 +213,29 @@ sglang serve \
   --host 127.0.0.1 --port 30000
 ```
 
-### Native MTP clarification
+### Native MTP clarification and known sizing bug
 
 The MTP runs did not download or reference an external EAGLE checkpoint. Qwen's native MTP weights are included in the same `RadixArk/Qwen3.8-27B-NVFP4` repository. Its weight index contains 15 `mtp.*` tensors, and the model configuration declares one MTP hidden layer with shared rather than dedicated embeddings.
 
-`--speculative-algorithm EAGLE` selects SGLang's execution and verification machinery for that native head. The recorded server arguments confirm `speculative_draft_model_path=None`. SGLang nevertheless instantiated a `Qwen3_5ForCausalLMMTP` draft runtime and reported an additional 5.53 GB GPU allocation. That number is runtime allocation attributed to the native draft module and its representation, not a second downloaded 27B model.
+`--speculative-algorithm EAGLE` selects SGLang's execution and verification machinery for that native head. The recorded server arguments confirm `speculative_draft_model_path=None`. DFlash2 was different: it explicitly used the separately downloaded `incoai/Qwen3.8-27B-DFlash2` draft checkpoint.
 
-DFlash2 was different: it explicitly used the separately downloaded `incoai/Qwen3.8-27B-DFlash2` draft checkpoint.
+The pinned SGLang build instantiated `Qwen3_5ForCausalLMMTP` and reported a 5.53 GB load footprint. Upstream investigation shows that most of this is not inherent persistent MTP weight cost. The draft runtime temporarily creates its own BF16 `embed_tokens` and `lm_head` even though it later shares the target model's tensors. With vocabulary 248,320 and hidden size 5,120, those two temporary tensors account for roughly 5.08 GB decimal at TP1.
+
+In the affected implementation, deduplication occurred after the target KV pool had already been sized. The memory was released, but the pool was not enlarged afterward. Our logs show the same signature:
+
+```text
+MTP memory pool end:              2.45 GB available
+Prefill graph capture begins:     6.54 GB available
+Late memory release:             approximately 4.09 GB
+```
+
+Therefore, the measured 42,344-token MTP pool substantially understates what native MTP should support after correct early sharing. The speed results remain valid; the context-capacity result is specific to the affected commit. Relevant upstream work:
+
+- [SGLang issue #36452](https://github.com/sgl-project/sglang/issues/36452)
+- [SGLang PR #35996](https://github.com/sgl-project/sglang/pull/35996)
+- [SGLang PR #37155](https://github.com/sgl-project/sglang/pull/37155)
+
+Both fixes were still open when checked, and the local SGLang `main` checkout did not yet contain their sharing hook.
 
 ## Concurrent serving
 
@@ -255,7 +271,7 @@ The model advertises a native 262,144-token context. Runtime configuration deter
 
 | Mode | Physical token pool | Validated request |
 |---|---:|---:|
-| MTP-5 single-user | 42,344 | 1,024 input + **41,300 output** |
+| MTP-5 single-user, affected SGLang build | 42,344 | 1,024 input + **41,300 output** |
 | DFlash2 single-user | 54,153 | **48,000 input** + 512 output |
 | Normal autoregressive baseline | 128,356 | Pool observed; boundary not exercised |
 | Dedicated max-context AR | 276,664 | **260,000 input + 1,024 output** |
@@ -384,7 +400,7 @@ Use DFlash2. Expect approximately 160–190 output tok/s on these synthetic work
 
 ### Coding agent with no external draft checkpoint
 
-Use MTP-5. It reached 161 tok/s at 1K input and validated a 41.3K-token output stress request. Disable thinking for short interactive edits; enable it with a much larger completion budget for difficult reasoning.
+Use MTP-5. It reached 161 tok/s at 1K input and validated a 41.3K-token output stress request on the pinned build. That capacity was artificially limited by the documented KV-pool sizing bug and should improve after the upstream fix. Disable thinking for short interactive edits; enable it with a much larger completion budget for difficult reasoning.
 
 ### Multiple users
 
@@ -396,14 +412,15 @@ Use the dedicated autoregressive max-context profile. It fits the full native 26
 
 ## Important caveats
 
-1. SGLang logged: `Using FP8 KV cache but no scaling factors provided. Defaulting to scaling factors of 1.0.` Accuracy should be compared against BF16 KV on a representative evaluation before production use.
-2. Random synthetic prompts can produce unusually high speculative acceptance and pathological decoded text. Real coding traces may differ.
-3. The quality sample contained only six hand-written prompts; it is not HumanEval, LiveCodeBench, SWE-bench, or a repository-level agent benchmark.
-4. DFlash2 was performance-tested, but the hand-written coding-quality prompts were run on MTP-5.
-5. `--fp4-gemm-backend auto` was used. The runtime performed FlashInfer FP4 autotuning, but explicit cuDNN, CuTe DSL, and CUTLASS A/B measurements were not completed in this rental.
-6. vLLM was not tested.
-7. The high-concurrency profile traded token capacity for GDN state slots and exposed only 9,625 shared token slots. Do not use it for long agent histories.
-8. The max-context profile disables radix caching, making it unsuitable for efficient repeated-prefix agent loops despite its large raw context.
+1. The pinned SGLang commit has a known native-MTP KV-sizing bug: temporary duplicate embedding and LM-head allocations are released only after the KV pool is sized. The measured 42,344-token MTP pool is not an inherent Qwen MTP limitation.
+2. SGLang logged: `Using FP8 KV cache but no scaling factors provided. Defaulting to scaling factors of 1.0.` Accuracy should be compared against BF16 KV on a representative evaluation before production use.
+3. Random synthetic prompts can produce unusually high speculative acceptance and pathological decoded text. Real coding traces may differ.
+4. The quality sample contained only six hand-written prompts; it is not HumanEval, LiveCodeBench, SWE-bench, or a repository-level agent benchmark.
+5. DFlash2 was performance-tested, but the hand-written coding-quality prompts were run on MTP-5.
+6. `--fp4-gemm-backend auto` was used. The runtime performed FlashInfer FP4 autotuning, but explicit cuDNN, CuTe DSL, and CUTLASS A/B measurements were not completed in this rental.
+7. vLLM was not tested.
+8. The high-concurrency profile traded token capacity for GDN state slots and exposed only 9,625 shared token slots. Do not use it for long agent histories.
+9. The max-context profile disables radix caching, making it unsuitable for efficient repeated-prefix agent loops despite its large raw context.
 
 ## Artifacts
 
@@ -421,8 +438,7 @@ They include:
 - 250 ms GPU telemetry CSV;
 - complete coding prompts and responses;
 - hardware/software environment capture;
-- sanitized Vast instance metadata;
-- original compressed archive and SHA-256 checksum.
+- sanitized Vast instance metadata.
 
 Compact derived files:
 
